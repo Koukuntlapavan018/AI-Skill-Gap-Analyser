@@ -1,0 +1,21 @@
+job_id,job_role,required_skills,experience_level
+1,Data Analyst,"Python,SQL,Excel,Power BI,Statistics",Fresher
+2,Data Scientist,"Python,SQL,Machine Learning,Statistics,Pandas,NumPy",Fresher
+3,Machine Learning Engineer,"Python,Machine Learning,TensorFlow,Scikit-learn,SQL",Fresher
+4,Software Developer,"Python,Java,SQL,DSA,Git",Fresher
+5,Web Developer,"HTML,CSS,JavaScript,React,SQL,Git",Fresher
+6,Python Developer,"Python,SQL,Django,Flask,Git",Fresher
+7,Java Developer,"Java,SQL,Spring Boot,DSA,Git",Fresher
+8,AI Engineer,"Python,Machine Learning,Deep Learning,NLP,TensorFlow",Fresher
+9,Data Engineer,"Python,SQL,ETL,PySpark,AWS",Fresher
+10,BI Developer,"SQL,Power BI,Excel,DAX,Data Visualization",Fresher
+11,Cloud Engineer,"AWS,Linux,Python,Docker,Networking",Fresher
+12,DevOps Engineer,"Linux,Docker,Kubernetes,AWS,Jenkins,Git",Fresher
+13,Cybersecurity Analyst,"Networking,Linux,Python,Cybersecurity,SIEM",Fresher
+14,Database Administrator,"SQL,MySQL,PostgreSQL,Database Management,Linux",Fresher
+15,Frontend Developer,"HTML,CSS,JavaScript,React,Git",Fresher
+16,Backend Developer,"Python,Flask,Django,SQL,REST API,Git",Fresher
+17,Full Stack Developer,"HTML,CSS,JavaScript,React,Node.js,SQL,Git",Fresher
+18,NLP Engineer,"Python,NLP,Machine Learning,Transformers,PyTorch",Fresher
+19,AI/ML Intern,"Python,Machine Learning,NumPy,Pandas,Scikit-learn",Fresher
+20,QA Engineer,"Python,Java,Software Testing,Selenium,SQL,Git",Fresher
