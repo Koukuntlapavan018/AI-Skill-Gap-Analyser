@@ -1,8 +1,6 @@
 import streamlit as st
-from pypdf import PdfReader
-from pdf2image import convert_from_bytes
-import pytesseract
 import pandas as pd
+import fitz
 
 
 # -----------------------------------
@@ -14,18 +12,6 @@ st.set_page_config(
     page_icon="🎯",
     layout="wide"
 )
-
-
-# -----------------------------------
-# OCR SETTINGS
-# -----------------------------------
-
-POPPLER_PATH = r"C:\Users\pavan\Downloads\Release-26.07.0-0\poppler-26.07.0\Library\bin" 
-# If Tesseract is installed in the default location,
-# this path should work.
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
 
 # -----------------------------------
@@ -117,7 +103,6 @@ if uploaded_file is not None:
 
     st.success("Resume uploaded successfully! ✅")
 
-
     # -----------------------------------
     # EXTRACT RESUME TEXT
     # -----------------------------------
@@ -126,51 +111,25 @@ if uploaded_file is not None:
 
     try:
 
-        # First try normal PDF text extraction
-        reader = PdfReader(uploaded_file)
+        pdf_document = fitz.open(
+            stream=uploaded_file.getvalue(),
+            filetype="pdf"
+        )
 
-        for page in reader.pages:
+        for page in pdf_document:
 
-            text = page.extract_text()
+            text = page.get_text()
 
-            if text:
+            if text.strip():
+
                 resume_text += text + "\n"
 
-
-        # -----------------------------------
-        # OCR FALLBACK
-        # -----------------------------------
-
-        if not resume_text.strip():
-
-            st.info(
-                "This PDF appears to be scanned/image-based. "
-                "Using OCR to read the resume..."
-            )
-
-            images = convert_from_bytes(
-                uploaded_file.getvalue(),
-                poppler_path=POPPLER_PATH
-            )
-
-            ocr_text = []
-
-            for image in images:
-
-                text = pytesseract.image_to_string(
-                    image
-                )
-
-                ocr_text.append(text)
-
-
-            resume_text = "\n".join(ocr_text)
-
+        pdf_document.close()
 
     except Exception as e:
 
         st.error(
-            f"OCR/PDF processing error: {e}"
+            f"PDF processing error: {e}"
         )
 
         st.stop()
@@ -182,8 +141,14 @@ if uploaded_file is not None:
 
     if not resume_text.strip():
 
-        st.error(
-            "No text could be extracted from this resume."
+        st.warning(
+            "⚠️ This resume appears to be scanned/image-based."
+        )
+
+        st.info(
+            "The PDF was opened successfully, but it does not "
+            "contain selectable text. OCR is required to read "
+            "the scanned pages."
         )
 
         st.stop()
@@ -193,7 +158,9 @@ if uploaded_file is not None:
     # SHOW EXTRACTED TEXT
     # -----------------------------------
 
-    with st.expander("📄 View Extracted Resume Text"):
+    with st.expander(
+        "📄 View Extracted Resume Text"
+    ):
 
         st.text_area(
             "Resume Text",
@@ -250,7 +217,9 @@ if uploaded_file is not None:
 
     st.divider()
 
-    st.header("🏆 Top Career Recommendations")
+    st.header(
+        "🏆 Top Career Recommendations"
+    )
 
     detected_lower = set(
         skill.lower()
@@ -299,9 +268,7 @@ if uploaded_file is not None:
                 2
             ),
 
-            "Matched Skills": len(
-                matched
-            ),
+            "Matched Skills": len(matched),
 
             "Required Skills": len(
                 required_lower
@@ -310,7 +277,9 @@ if uploaded_file is not None:
         })
 
 
-    # Sort recommendations
+    # -----------------------------------
+    # SORT RECOMMENDATIONS
+    # -----------------------------------
 
     recommendations = sorted(
         recommendations,
@@ -319,8 +288,6 @@ if uploaded_file is not None:
         reverse=True
     )
 
-
-    # Top 5
 
     top_5 = recommendations[:5]
 
@@ -360,7 +327,7 @@ if uploaded_file is not None:
 
 
     # -----------------------------------
-    # RECOMMENDATION CHART
+    # CAREER MATCH CHART
     # -----------------------------------
 
     st.subheader(
@@ -454,7 +421,6 @@ if uploaded_file is not None:
     match_percentage = (
 
         len(matched_skills)
-
         / len(required_skills)
 
     ) * 100
