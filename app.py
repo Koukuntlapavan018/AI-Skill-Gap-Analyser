@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 import fitz
+import easyocr
+import numpy as np
+from PIL import Image
 
 
-# -----------------------------------
-# PAGE SETTINGS
-# -----------------------------------
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
 
 st.set_page_config(
     page_title="AI Skill Gap Analyzer",
@@ -14,31 +17,27 @@ st.set_page_config(
 )
 
 
-# -----------------------------------
+# ==========================================
 # TITLE
-# -----------------------------------
+# ==========================================
 
 st.title("🎯 AI-Powered Skill Gap Analyzer")
-st.subheader("Intelligent Career Recommendation System")
-
 st.write(
-    "Upload your resume to automatically extract skills, "
-    "analyze skill gaps, and receive career recommendations."
+    "Upload your resume and analyze your skills, "
+    "career matches, and missing skills."
 )
 
-st.divider()
 
-
-# -----------------------------------
+# ==========================================
 # LOAD JOB DATASET
-# -----------------------------------
+# ==========================================
 
 jobs = pd.read_csv("jobs.csv")
 
 
-# -----------------------------------
-# SKILL LIST
-# -----------------------------------
+# ==========================================
+# SKILLS LIST
+# ==========================================
 
 skills_list = [
     "Python",
@@ -47,7 +46,6 @@ skills_list = [
     "Power BI",
     "Statistics",
     "Machine Learning",
-    "Deep Learning",
     "TensorFlow",
     "Scikit-learn",
     "Pandas",
@@ -62,17 +60,16 @@ skills_list = [
     "Django",
     "Flask",
     "Spring Boot",
+    "Deep Learning",
     "NLP",
-    "Transformers",
-    "PyTorch",
     "ETL",
     "PySpark",
     "AWS",
     "Linux",
     "Docker",
+    "Networking",
     "Kubernetes",
     "Jenkins",
-    "Networking",
     "Cybersecurity",
     "SIEM",
     "MySQL",
@@ -80,100 +77,141 @@ skills_list = [
     "Database Management",
     "DAX",
     "Data Visualization",
-    "REST API",
     "Node.js",
-    "Selenium",
-    "Software Testing"
+    "REST API",
+    "Transformers",
+    "PyTorch",
+    "Software Testing",
+    "Selenium"
 ]
 
 
-# -----------------------------------
-# RESUME UPLOAD
-# -----------------------------------
+# ==========================================
+# NORMALIZE SKILL
+# ==========================================
 
-st.header("📄 Upload Your Resume")
+def normalize_skill(skill):
+    return skill.strip().lower()
+
+
+# ==========================================
+# OCR FUNCTION
+# ==========================================
+
+@st.cache_resource
+def load_ocr():
+
+    reader = easyocr.Reader(["en"])
+
+    return reader
+
+
+def extract_resume_text(uploaded_file):
+
+    reader = load_ocr()
+
+    pdf_bytes = uploaded_file.getvalue()
+
+    document = fitz.open(
+        stream=pdf_bytes,
+        filetype="pdf"
+    )
+
+    resume_text = ""
+
+    progress = st.progress(0)
+
+    total_pages = len(document)
+
+    for page_number, page in enumerate(document):
+
+        # Render PDF page as image
+        pix = page.get_pixmap(
+            matrix=fitz.Matrix(2, 2)
+        )
+
+        image = Image.frombytes(
+            "RGB",
+            [pix.width, pix.height],
+            pix.samples
+        )
+
+        # Convert image to NumPy
+        image_array = np.array(image)
+
+        # OCR
+        result = reader.readtext(
+            image_array,
+            detail=0
+        )
+
+        resume_text += "\n".join(result)
+        resume_text += "\n"
+
+        progress.progress(
+            (page_number + 1) / total_pages
+        )
+
+    progress.empty()
+
+    return resume_text
+
+
+# ==========================================
+# UPLOAD RESUME
+# ==========================================
 
 uploaded_file = st.file_uploader(
-    "Choose your resume PDF",
+    "📄 Upload your Resume PDF",
     type=["pdf"]
 )
 
 
-if uploaded_file is not None:
+if uploaded_file:
 
-    st.success("Resume uploaded successfully! ✅")
+    st.success(
+        f"Resume uploaded: {uploaded_file.name}"
+    )
 
-    # -----------------------------------
-    # EXTRACT RESUME TEXT
-    # -----------------------------------
+    # ======================================
+    # EXTRACT TEXT
+    # ======================================
 
-    resume_text = ""
+    with st.spinner("🔍 Reading your resume..."):
 
-    try:
-
-        pdf_document = fitz.open(
-            stream=uploaded_file.getvalue(),
-            filetype="pdf"
+        resume_text = extract_resume_text(
+            uploaded_file
         )
 
-        for page in pdf_document:
 
-            text = page.get_text()
+    # ======================================
+    # SHOW RESUME TEXT
+    # ======================================
 
-            if text.strip():
+    st.subheader("📄 Extracted Resume Text")
 
-                resume_text += text + "\n"
-
-        pdf_document.close()
-
-    except Exception as e:
-
-        st.error(
-            f"PDF processing error: {e}"
-        )
-
-        st.stop()
-
-
-    # -----------------------------------
-    # CHECK TEXT
-    # -----------------------------------
-
-    if not resume_text.strip():
-
-        st.warning(
-            "⚠️ This resume appears to be scanned/image-based."
-        )
-
-        st.info(
-            "The PDF was opened successfully, but it does not "
-            "contain selectable text. OCR is required to read "
-            "the scanned pages."
-        )
-
-        st.stop()
-
-
-    # -----------------------------------
-    # SHOW EXTRACTED TEXT
-    # -----------------------------------
-
-    with st.expander(
-        "📄 View Extracted Resume Text"
-    ):
+    if resume_text.strip():
 
         st.text_area(
-            "Resume Text",
+            "Resume Content",
             resume_text,
-            height=300
+            height=250
         )
 
+    else:
 
-    # -----------------------------------
-    # EXTRACT SKILLS
-    # -----------------------------------
+        st.error(
+            "❌ Could not extract text from the resume."
+        )
 
-    st.header("🤖 Extracted Skills")
+        st.stop()
+
+
+    # ======================================
+    # SKILL DETECTION
+    # ======================================
+
+    st.subheader("🧠 Skills Detected")
 
     resume_lower = resume_text.lower()
 
@@ -189,167 +227,98 @@ if uploaded_file is not None:
     if detected_skills:
 
         st.success(
-            f"{len(detected_skills)} skills detected! ✅"
+            f"Detected {len(detected_skills)} skills"
         )
 
-        cols = st.columns(4)
-
-        for index, skill in enumerate(
-            detected_skills
-        ):
-
-            with cols[index % 4]:
-
-                st.info(
-                    f"✓ {skill}"
-                )
+        st.write(
+            ", ".join(detected_skills)
+        )
 
     else:
 
         st.warning(
-            "No matching skills were found."
+            "No known skills detected."
         )
 
 
-    # -----------------------------------
+    # ======================================
     # CAREER RECOMMENDATIONS
-    # -----------------------------------
+    # ======================================
 
-    st.divider()
+    st.subheader("🚀 Career Recommendations")
 
-    st.header(
-        "🏆 Top Career Recommendations"
-    )
 
-    detected_lower = set(
-        skill.lower()
+    student_skills = set(
+        normalize_skill(skill)
         for skill in detected_skills
     )
+
 
     recommendations = []
 
 
     for _, job in jobs.iterrows():
 
-        required_skills = [
-            skill.strip()
-            for skill in job[
-                "required_skills"
-            ].split(",")
-        ]
-
-        required_lower = set(
-            skill.lower()
-            for skill in required_skills
+        job_skills = set(
+            normalize_skill(skill)
+            for skill in job["required_skills"].split(",")
         )
 
-        matched = detected_lower.intersection(
-            required_lower
+        matched = student_skills.intersection(
+            job_skills
         )
 
-        if len(required_lower) > 0:
+        percentage = (
+            len(matched) / len(job_skills)
+        ) * 100
 
-            match_percentage = (
-                len(matched)
-                / len(required_lower)
-            ) * 100
-
-        else:
-
-            match_percentage = 0
-
-
-        recommendations.append({
-
-            "Job Role": job["job_role"],
-
-            "Match Percentage": round(
-                match_percentage,
-                2
-            ),
-
-            "Matched Skills": len(matched),
-
-            "Required Skills": len(
-                required_lower
+        recommendations.append(
+            (
+                job["job_role"],
+                percentage
             )
+        )
 
-        })
 
-
-    # -----------------------------------
-    # SORT RECOMMENDATIONS
-    # -----------------------------------
-
-    recommendations = sorted(
-        recommendations,
-        key=lambda x:
-        x["Match Percentage"],
+    # Sort
+    recommendations.sort(
+        key=lambda x: x[1],
         reverse=True
     )
 
 
-    top_5 = recommendations[:5]
+    # ======================================
+    # TOP 5
+    # ======================================
+
+    top5 = recommendations[:5]
 
 
-    # -----------------------------------
-    # DISPLAY TOP 5
-    # -----------------------------------
-
-    for index, recommendation in enumerate(
-        top_5,
+    for rank, (role, percentage) in enumerate(
+        top5,
         1
     ):
 
-        col1, col2 = st.columns(
-            [3, 1]
+        st.write(
+            f"**{rank}. {role} — "
+            f"{percentage:.2f}% match**"
         )
 
-        with col1:
 
-            st.write(
-                f"### {index}. "
-                f"{recommendation['Job Role']}"
-            )
+    # ======================================
+    # CHART
+    # ======================================
 
-            st.write(
-                f"Matched Skills: "
-                f"{recommendation['Matched Skills']} / "
-                f"{recommendation['Required Skills']}"
-            )
-
-        with col2:
-
-            st.metric(
-                "Match",
-                f"{recommendation['Match Percentage']}%"
-            )
-
-
-    # -----------------------------------
-    # CAREER MATCH CHART
-    # -----------------------------------
-
-    st.subheader(
-        "📊 Career Match Chart"
+    chart_data = pd.DataFrame(
+        top5,
+        columns=[
+            "Job Role",
+            "Match Percentage"
+        ]
     )
 
-    chart_data = pd.DataFrame({
-
-        "Career": [
-            item["Job Role"]
-            for item in top_5
-        ],
-
-        "Match Percentage": [
-            item["Match Percentage"]
-            for item in top_5
-        ]
-
-    })
-
     chart_data = chart_data.set_index(
-        "Career"
+        "Job Role"
     )
 
     st.bar_chart(
@@ -357,24 +326,16 @@ if uploaded_file is not None:
     )
 
 
-    # -----------------------------------
-    # TARGET JOB ANALYSIS
-    # -----------------------------------
+    # ======================================
+    # TARGET JOB
+    # ======================================
 
-    st.divider()
-
-    st.header(
-        "🎯 Target Job Skill Gap"
-    )
-
-    job_roles = jobs[
-        "job_role"
-    ].tolist()
+    st.subheader("🎯 Skill Gap Analysis")
 
 
     selected_role = st.selectbox(
-        "Select a target job role",
-        job_roles
+        "Select a job role",
+        jobs["job_role"]
     )
 
 
@@ -383,48 +344,35 @@ if uploaded_file is not None:
     ].iloc[0]
 
 
-    required_skills = [
-
-        skill.strip()
-
+    required_skills = set(
+        normalize_skill(skill)
         for skill in selected_job[
             "required_skills"
         ].split(",")
-
-    ]
-
-
-    matched_skills = []
-
-    missing_skills = []
+    )
 
 
-    for skill in required_skills:
-
-        if skill.lower() in detected_lower:
-
-            matched_skills.append(
-                skill
-            )
-
-        else:
-
-            missing_skills.append(
-                skill
-            )
+    matched_skills = (
+        student_skills.intersection(
+            required_skills
+        )
+    )
 
 
-    # -----------------------------------
-    # TARGET JOB MATCH
-    # -----------------------------------
+    missing_skills = (
+        required_skills - student_skills
+    )
+
 
     match_percentage = (
-
         len(matched_skills)
         / len(required_skills)
-
     ) * 100
 
+
+    # ======================================
+    # RESULTS
+    # ======================================
 
     col1, col2, col3 = st.columns(3)
 
@@ -433,7 +381,7 @@ if uploaded_file is not None:
 
         st.metric(
             "Skill Match",
-            f"{match_percentage:.1f}%"
+            f"{match_percentage:.2f}%"
         )
 
 
@@ -453,57 +401,50 @@ if uploaded_file is not None:
         )
 
 
-    # -----------------------------------
+    # ======================================
     # MATCHED SKILLS
-    # -----------------------------------
+    # ======================================
 
-    st.subheader(
-        "✅ Matched Skills"
-    )
+    st.write("### ✅ Your Skills")
 
     if matched_skills:
 
         st.write(
-            ", ".join(matched_skills)
+            ", ".join(
+                sorted(matched_skills)
+            )
         )
 
     else:
 
-        st.write(
-            "No matched skills."
-        )
+        st.write("None")
 
 
-    # -----------------------------------
+    # ======================================
     # MISSING SKILLS
-    # -----------------------------------
+    # ======================================
 
-    st.subheader(
-        "📚 Skills You Need to Learn"
-    )
+    st.write("### ❌ Skills You Need to Learn")
 
     if missing_skills:
 
-        for skill in missing_skills:
-
-            st.warning(
-                f"Learn: {skill}"
+        st.warning(
+            ", ".join(
+                sorted(missing_skills)
             )
+        )
 
     else:
 
         st.success(
-            "You have all the required skills! 🎉"
+            "🎉 You have all required skills!"
         )
 
 
-# -----------------------------------
-# FOOTER
-# -----------------------------------
+    # ======================================
+    # FINAL MESSAGE
+    # ======================================
 
-st.divider()
-
-st.caption(
-    "AI-Powered Skill Gap Analyzer | "
-    "Final Year BTech Project"
-)
+    st.success(
+        "✅ Skill Gap Analysis Completed!"
+    )
