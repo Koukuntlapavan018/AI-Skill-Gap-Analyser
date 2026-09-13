@@ -1,0 +1,8 @@
+streamlit
+pandas
+PyMuPDF
+easyocr
+Pillow
+numpy
+torch
+torchvision
