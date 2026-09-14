@@ -1,42 +1,95 @@
-# 🎯 AI-Powered Skill Gap Analyzer
+# 🤖 AI-Powered Skill Gap Analyzer & Intelligent Career Recommendation System
 
-## 📌 Project Overview
+An AI-powered career guidance application that analyzes a student's resume, identifies their technical skills, compares them with industry job requirements, calculates skill gaps, and recommends suitable career roles and skills to learn.
 
-The AI-Powered Skill Gap Analyzer is a career recommendation system that analyzes a student's skills and compares them with the skills required for different job roles.
+The application is built using Python and Streamlit and can be accessed through a web browser without installing Python or any additional software.
 
-The system identifies skill gaps and recommends suitable career roles and skills that the student needs to learn.
+---
 
-## 🚀 Features
+## 🎯 Project Overview
 
-- 📄 Resume upload
-- 🤖 Resume skill extraction
-- 🎯 Skill gap analysis
-- 🏆 Career recommendations
-- 📊 Career match percentage
-- 📚 Missing skills identification
-- 📈 Career match chart
-- 🎯 Target job analysis
+Many students are unsure whether their current technical skills match the requirements of industry job roles.
 
-## 🛠️ Technologies Used
+This project solves this problem by automatically analyzing a student's resume and providing:
 
-- Python
-- Pandas
-- Streamlit
-- NLP
-- Machine Learning
-- PyPDF
-- Tesseract OCR
-- Poppler
-- Git & GitHub
+- Resume-based skill extraction
+- Job-role skill comparison
+- Skill match percentage
+- Missing skill identification
+- Career recommendations
+- Skills-to-learn recommendations
+- Interactive visual results
 
-## 📂 Project Structure
+---
+
+## ✨ Features
+
+### 📄 Resume Analysis
+- Upload a resume in PDF format
+- Extract text from digital PDFs
+- Perform OCR on scanned/image-based resumes
+- Automatically identify technical skills
+
+### 🎯 Skill Gap Analysis
+- Compare student skills with job requirements
+- Calculate skill match percentage
+- Identify matched skills
+- Identify missing skills
+
+### 💼 Career Recommendation
+- Analyze available job roles
+- Calculate compatibility for each role
+- Display Top 5 suitable career roles
+
+### 📚 Skills to Learn
+- Shows missing skills for the selected job role
+- Helps students understand what they should learn next
+
+### 📊 Interactive Dashboard
+- Streamlit-based web interface
+- Skill match visualization
+- Career recommendation chart
+- Student profile information
+- Job-role analysis
+
+---
+
+## 🧠 System Workflow
 
 ```text
-AI_skill_gap_Analyser/
-│
-├── app.py
-├── main.py
-├── resume_parser.py
-├── jobs.csv
-├── .gitignore
-└── README.md
+                Resume PDF
+                    │
+                    ▼
+            Resume Text Extraction
+                    │
+          ┌─────────┴─────────┐
+          │                   │
+     Digital PDF         Scanned PDF
+          │                   │
+    PyMuPDF Extraction      RapidOCR
+          │                   │
+          └─────────┬─────────┘
+                    ▼
+              Skill Detection
+                    │
+                    ▼
+            Student Skill Profile
+                    │
+                    ▼
+          Compare With Job Skills
+                    │
+                    ▼
+             Skill Gap Analysis
+                    │
+          ┌─────────┴─────────┐
+          ▼                   ▼
+   Missing Skills       Match Percentage
+          │
+          ▼
+   Skills To Learn
+          │
+          ▼
+   Career Recommendations
+          │
+          ▼
+      Streamlit Dashboard
