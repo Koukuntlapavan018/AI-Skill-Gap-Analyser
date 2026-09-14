@@ -1,8 +1,6 @@
 streamlit
 pandas
 PyMuPDF
-easyocr
 Pillow
 numpy
-torch
-torchvision
+rapidocr-onnxruntime==1.4.4
