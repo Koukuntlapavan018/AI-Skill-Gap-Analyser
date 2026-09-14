@@ -2,14 +2,14 @@ import streamlit as st
 import pandas as pd
 import fitz
 import numpy as np
-from PIL import Image
-from rapidocr_onnxruntime import RapidOCR
 import re
 
+from rapidocr import RapidOCR
 
-# ==========================================
-# PAGE CONFIG
-# ==========================================
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
 
 st.set_page_config(
     page_title="AI Skill Gap Analyzer",
@@ -18,60 +18,89 @@ st.set_page_config(
 )
 
 
-# ==========================================
+# ============================================================
 # TITLE
-# ==========================================
+# ============================================================
 
 st.title("🎯 AI-Powered Skill Gap Analyzer")
 
 st.write(
-    "Upload your resume to analyze your skills, "
-    "find suitable job roles, and identify skill gaps."
+    """
+    Upload your resume and the system will analyze your skills,
+    compare them with job requirements, identify skill gaps,
+    and recommend suitable career roles.
+    """
 )
 
 
-# ==========================================
+# ============================================================
 # LOAD JOB DATA
-# ==========================================
+# ============================================================
 
-jobs = pd.read_csv("jobs.csv")
+@st.cache_data
+def load_jobs():
+
+    jobs = pd.read_csv("jobs.csv")
+
+    return jobs
 
 
-# ==========================================
-# SKILL DATABASE
-# ==========================================
+try:
+    jobs = load_jobs()
+
+except Exception as e:
+
+    st.error("❌ Could not load jobs.csv")
+
+    st.code(str(e))
+
+    st.stop()
+
+
+# ============================================================
+# SKILLS LIST
+# ============================================================
 
 skills_list = [
+
     "Python",
     "SQL",
     "Excel",
     "Power BI",
     "Statistics",
     "Machine Learning",
-    "TensorFlow",
-    "Scikit-learn",
+    "Deep Learning",
     "Pandas",
     "NumPy",
+    "TensorFlow",
+    "Scikit-learn",
     "Java",
+    "C",
+    "C++",
     "DSA",
     "Git",
+    "GitHub",
     "HTML",
     "CSS",
     "JavaScript",
     "React",
+    "Node.js",
     "Django",
     "Flask",
     "Spring Boot",
-    "Deep Learning",
+    "REST API",
     "NLP",
+    "Transformers",
+    "PyTorch",
     "ETL",
     "PySpark",
     "AWS",
+    "Azure",
     "Linux",
     "Docker",
-    "Networking",
     "Kubernetes",
     "Jenkins",
+    "Networking",
     "Cybersecurity",
     "SIEM",
     "MySQL",
@@ -79,26 +108,24 @@ skills_list = [
     "Database Management",
     "DAX",
     "Data Visualization",
-    "Node.js",
-    "REST API",
-    "Transformers",
-    "PyTorch",
-    "Software Testing",
-    "Selenium"
+    "Selenium",
+    "Software Testing"
+
 ]
 
 
-# ==========================================
-# NORMALIZE
-# ==========================================
+# ============================================================
+# NORMALIZE SKILLS
+# ============================================================
 
 def normalize_skill(skill):
+
     return skill.strip().lower()
 
 
-# ==========================================
-# LOAD OCR ONCE
-# ==========================================
+# ============================================================
+# LOAD RAPIDOCR
+# ============================================================
 
 @st.cache_resource
 def load_ocr():
@@ -106,90 +133,109 @@ def load_ocr():
     return RapidOCR()
 
 
-# ==========================================
-# EXTRACT TEXT FROM PDF
-# ==========================================
+# ============================================================
+# EXTRACT TEXT FROM RESUME
+# ============================================================
 
-def extract_resume_text(uploaded_file):
-
-    pdf_bytes = uploaded_file.getvalue()
-
-    document = fitz.open(
-        stream=pdf_bytes,
-        filetype="pdf"
-    )
+def extract_resume_text(pdf_bytes):
 
     resume_text = ""
 
-    ocr = load_ocr()
+    try:
 
-    progress = st.progress(0)
+        pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-    total_pages = len(document)
+        total_pages = len(pdf)
 
-    for page_number, page in enumerate(document):
+        progress = st.progress(0)
 
-        # ----------------------------------
-        # FIRST TRY NORMAL PDF TEXT
-        # ----------------------------------
+        ocr = load_ocr()
 
-        page_text = page.get_text("text")
+        for page_number, page in enumerate(pdf):
 
-        if page_text.strip():
+            # ------------------------------------------------
+            # FIRST TRY NORMAL PDF TEXT EXTRACTION
+            # ------------------------------------------------
 
-            resume_text += page_text
-            resume_text += "\n"
+            page_text = page.get_text("text")
 
-        else:
+            if page_text and page_text.strip():
 
-            # ----------------------------------
-            # SCANNED PDF → OCR
-            # ----------------------------------
+                resume_text += page_text + "\n"
 
-            pix = page.get_pixmap(
-                matrix=fitz.Matrix(1.5, 1.5),
-                alpha=False
+            else:
+
+                # ------------------------------------------------
+                # OCR FOR SCANNED / IMAGE PDF
+                # ------------------------------------------------
+
+                pix = page.get_pixmap(
+                    matrix=fitz.Matrix(1.5, 1.5),
+                    alpha=False
+                )
+
+                image = np.frombuffer(
+                    pix.samples,
+                    dtype=np.uint8
+                )
+
+                image = image.reshape(
+                    pix.height,
+                    pix.width,
+                    pix.n
+                )
+
+                # Convert RGBA/RGB appropriately
+                if pix.n == 4:
+
+                    image = image[:, :, :3]
+
+                # ------------------------------------------------
+                # RAPIDOCR
+                # ------------------------------------------------
+
+                result = ocr(image)
+
+                if result is not None:
+
+                    detected_text = getattr(
+                        result,
+                        "txts",
+                        None
+                    )
+
+                    if detected_text:
+
+                        for text in detected_text:
+
+                            if text:
+
+                                resume_text += str(text) + "\n"
+
+            progress.progress(
+                (page_number + 1) / total_pages
             )
 
-            image = Image.frombytes(
-                "RGB",
-                [pix.width, pix.height],
-                pix.samples
-            )
+        progress.empty()
 
-            image_array = np.array(image)
+        pdf.close()
 
-            result, _ = ocr(image_array)
+    except Exception as e:
 
-            if result:
+        st.error("❌ Error while reading the resume.")
 
-                for item in result:
+        st.code(str(e))
 
-                    if len(item) >= 2:
-
-                        detected_text = item[1]
-
-                        resume_text += (
-                            str(detected_text)
-                            + "\n"
-                        )
-
-        progress.progress(
-            (page_number + 1) / total_pages
-        )
-
-    progress.empty()
-
-    document.close()
+        return ""
 
     return resume_text
 
 
-# ==========================================
-# STUDENT NAME
-# ==========================================
+# ============================================================
+# EXTRACT STUDENT NAME
+# ============================================================
 
-def extract_student_name(text):
+def extract_name(text):
 
     lines = [
         line.strip()
@@ -197,82 +243,90 @@ def extract_student_name(text):
         if line.strip()
     ]
 
-    ignore_words = [
+    ignored_words = [
         "resume",
-        "curriculum",
-        "vitae",
+        "curriculum vitae",
+        "cv",
+        "profile",
+        "contact",
         "email",
         "phone",
         "mobile",
-        "contact",
         "linkedin",
         "github",
         "objective",
-        "profile",
-        "education",
-        "skills"
+        "career objective"
     ]
 
-    for line in lines[:12]:
+    for line in lines[:15]:
 
-        clean_line = re.sub(
-            r"[^A-Za-z .]",
-            "",
-            line
-        ).strip()
+        lower_line = line.lower()
 
-        words = clean_line.split()
+        if any(
+            word in lower_line
+            for word in ignored_words
+        ):
+            continue
 
-        if 2 <= len(words) <= 5:
+        # Avoid lines containing email/phone
+        if "@" in line:
+            continue
 
-            lower_line = clean_line.lower()
+        if re.search(r"\d{7,}", line):
+            continue
 
-            if not any(
-                word in lower_line
-                for word in ignore_words
+        # Name usually has 2-4 words
+        words = line.split()
+
+        if 2 <= len(words) <= 4:
+
+            if all(
+                re.match(r"^[A-Za-z.\-]+$", word)
+                for word in words
             ):
 
-                return clean_line
-
-    return "Student"
-
-
-# ==========================================
-# EDUCATION
-# ==========================================
-
-def extract_education(text):
-
-    text_lower = text.lower()
-
-    if (
-        "b.tech" in text_lower
-        or "btech" in text_lower
-        or "bachelor of technology" in text_lower
-    ):
-        return "B.Tech"
-
-    if "b.e" in text_lower:
-        return "B.E"
-
-    if "bca" in text_lower:
-        return "BCA"
-
-    if "b.sc" in text_lower:
-        return "B.Sc"
-
-    if "m.tech" in text_lower:
-        return "M.Tech"
-
-    if "mca" in text_lower:
-        return "MCA"
+                return line
 
     return "Not detected"
 
 
-# ==========================================
-# GRADUATION YEAR
-# ==========================================
+# ============================================================
+# EXTRACT EDUCATION
+# ============================================================
+
+def extract_education(text):
+
+    education_patterns = [
+
+        r"\bB\.?\s*Tech\b",
+        r"\bB\.?\s*E\b",
+        r"\bBCA\b",
+        r"\bB\.?\s*Sc\b",
+        r"\bM\.?\s*Tech\b",
+        r"\bMCA\b",
+        r"\bM\.?\s*Sc\b",
+        r"\bMBA\b"
+
+    ]
+
+    for pattern in education_patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            return match.group()
+
+    return "Not detected"
+
+
+# ============================================================
+# EXTRACT GRADUATION YEAR
+# ============================================================
 
 def extract_graduation_year(text):
 
@@ -281,433 +335,506 @@ def extract_graduation_year(text):
         text
     )
 
-    years = [
-        int(year)
-        for year in years
-    ]
+    if years:
 
-    valid_years = [
-        year
-        for year in years
-        if 2024 <= year <= 2035
-    ]
-
-    if valid_years:
-
-        return str(max(valid_years))
+        return ", ".join(
+            sorted(set(years))
+        )
 
     return "Not detected"
 
 
-# ==========================================
+# ============================================================
 # DETECT SKILLS
-# ==========================================
+# ============================================================
 
 def detect_skills(text):
 
+    detected = []
+
     text_lower = text.lower()
 
-    detected = []
+    # Skill aliases
+    aliases = {
+
+        "js": "JavaScript",
+        "javascript": "JavaScript",
+
+        "reactjs": "React",
+        "react.js": "React",
+        "react": "React",
+
+        "nodejs": "Node.js",
+        "node.js": "Node.js",
+
+        "postgres": "PostgreSQL",
+        "postgresql": "PostgreSQL",
+
+        "mysql": "MySQL",
+
+        "powerbi": "Power BI",
+        "power bi": "Power BI",
+
+        "scikit learn": "Scikit-learn",
+        "scikit-learn": "Scikit-learn",
+
+        "sklearn": "Scikit-learn",
+
+        "ml": "Machine Learning",
+
+        "nlp": "NLP",
+
+        "aws": "AWS",
+
+        "gcp": "AWS"
+
+    }
+
+    # --------------------------------------------------------
+    # STANDARD SKILL MATCHING
+    # --------------------------------------------------------
 
     for skill in skills_list:
 
-        # Escape special characters
-        pattern = re.escape(
-            skill.lower()
-        )
+        skill_lower = skill.lower()
 
-        # Whole-word style matching
+        pattern = r"(?<!\w)" + re.escape(
+            skill_lower
+        ) + r"(?!\w)"
+
         if re.search(
-            r"(?<!\w)"
-            + pattern
-            + r"(?!\w)",
+            pattern,
             text_lower
         ):
 
-            detected.append(skill)
+            if skill not in detected:
 
-    return detected
+                detected.append(skill)
+
+    # --------------------------------------------------------
+    # ALIAS MATCHING
+    # --------------------------------------------------------
+
+    for alias, actual_skill in aliases.items():
+
+        pattern = r"(?<!\w)" + re.escape(
+            alias
+        ) + r"(?!\w)"
+
+        if re.search(
+            pattern,
+            text_lower
+        ):
+
+            if actual_skill not in detected:
+
+                detected.append(actual_skill)
+
+    return sorted(detected)
 
 
-# ==========================================
-# MAIN APP
-# ==========================================
+# ============================================================
+# CALCULATE JOB MATCH
+# ============================================================
+
+def calculate_job_match(
+    student_skills,
+    required_skills
+):
+
+    student_set = set(
+        normalize_skill(skill)
+        for skill in student_skills
+    )
+
+    required_set = set(
+        normalize_skill(skill)
+        for skill in required_skills
+    )
+
+    matched = student_set.intersection(
+        required_set
+    )
+
+    missing = required_set - student_set
+
+    if len(required_set) == 0:
+
+        percentage = 0
+
+    else:
+
+        percentage = (
+            len(matched)
+            /
+            len(required_set)
+        ) * 100
+
+    return (
+        matched,
+        missing,
+        percentage
+    )
+
+
+# ============================================================
+# FILE UPLOAD
+# ============================================================
 
 uploaded_file = st.file_uploader(
-    "📄 Upload Resume PDF",
+    "📄 Upload your resume PDF",
     type=["pdf"]
 )
 
 
-if uploaded_file:
+# ============================================================
+# ANALYSIS
+# ============================================================
+
+if uploaded_file is not None:
 
     st.success(
-        f"Resume uploaded: {uploaded_file.name}"
+        f"✅ Resume uploaded: {uploaded_file.name}"
     )
 
-    # --------------------------------------
-    # RESUME PROCESSING
-    # --------------------------------------
-
-    with st.spinner(
-        "🔍 Analyzing resume..."
+    if st.button(
+        "🚀 Analyze Resume",
+        type="primary"
     ):
 
-        resume_text = extract_resume_text(
-            uploaded_file
+        with st.spinner(
+            "Analyzing your resume..."
+        ):
+
+            pdf_bytes = uploaded_file.read()
+
+            resume_text = extract_resume_text(
+                pdf_bytes
+            )
+
+        if not resume_text.strip():
+
+            st.error(
+                "❌ Could not extract text from this resume."
+            )
+
+            st.stop()
+
+        # ====================================================
+        # STUDENT PROFILE
+        # ====================================================
+
+        student_name = extract_name(
+            resume_text
         )
 
-    if not resume_text.strip():
-
-        st.error(
-            "❌ No readable text was found "
-            "in this resume."
+        education = extract_education(
+            resume_text
         )
 
-        st.stop()
+        graduation_year = extract_graduation_year(
+            resume_text
+        )
 
+        student_skills = detect_skills(
+            resume_text
+        )
 
-    # --------------------------------------
-    # STUDENT PROFILE
-    # --------------------------------------
+        # ====================================================
+        # STUDENT PROFILE DISPLAY
+        # ====================================================
 
-    student_name = extract_student_name(
-        resume_text
-    )
+        st.header("👨‍🎓 Student Profile")
 
-    education = extract_education(
-        resume_text
-    )
+        col1, col2, col3 = st.columns(3)
 
-    graduation_year = extract_graduation_year(
-        resume_text
-    )
+        with col1:
 
-    detected_skills = detect_skills(
-        resume_text
-    )
+            st.subheader("Name")
 
-    student_skills = set(
-        normalize_skill(skill)
-        for skill in detected_skills
-    )
+            st.write(student_name)
 
+        with col2:
 
-    st.header("👤 Student Profile")
+            st.subheader("Education")
 
+            st.write(education)
 
-    col1, col2, col3 = st.columns(3)
+        with col3:
 
+            st.subheader("Graduation Year")
 
-    with col1:
+            st.write(graduation_year)
 
-        st.markdown("**👨‍🎓 Name**")
+        # ====================================================
+        # SKILLS
+        # ====================================================
 
-        st.write(student_name)
+        st.header("🛠️ Detected Skills")
 
+        if student_skills:
 
-    with col2:
+            st.write(
+                ", ".join(student_skills)
+            )
 
-        st.markdown("**🎓 Education**")
+        else:
 
-        st.write(education)
+            st.warning(
+                "⚠️ No known skills were detected."
+            )
 
+        # ====================================================
+        # CAREER RECOMMENDATIONS
+        # ====================================================
 
-    with col3:
+        st.header(
+            "💼 Career Recommendations"
+        )
 
-        st.markdown("**📅 Graduation**")
+        recommendations = []
 
-        st.write(graduation_year)
+        for _, job in jobs.iterrows():
 
+            required_skills = [
+                skill.strip()
+                for skill in str(
+                    job["required_skills"]
+                ).split(",")
+            ]
 
-    # --------------------------------------
-    # SKILLS
-    # --------------------------------------
+            matched, missing, percentage = (
+                calculate_job_match(
+                    student_skills,
+                    required_skills
+                )
+            )
 
-    st.header("🧠 Skills Identified")
+            recommendations.append({
 
+                "Job Role":
+                    job["job_role"],
 
-    if detected_skills:
+                "Match %":
+                    round(percentage, 2),
+
+                "Matched Skills":
+                    len(matched),
+
+                "Missing Skills":
+                    len(missing)
+
+            })
+
+        recommendations_df = pd.DataFrame(
+            recommendations
+        )
+
+        recommendations_df = (
+            recommendations_df
+            .sort_values(
+                "Match %",
+                ascending=False
+            )
+            .reset_index(drop=True)
+        )
+
+        # ====================================================
+        # TOP 5
+        # ====================================================
+
+        top5 = recommendations_df.head(5)
+
+        st.subheader(
+            "🏆 Top 5 Suitable Career Roles"
+        )
+
+        st.dataframe(
+            top5,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # ====================================================
+        # BEST CAREER
+        # ====================================================
+
+        best_role = top5.iloc[0]
 
         st.success(
-            " • ".join(
-                sorted(detected_skills)
+            f"🎯 Best Match: **{best_role['Job Role']}** "
+            f"with **{best_role['Match %']:.2f}%** skill match."
+        )
+
+        # ====================================================
+        # BAR CHART
+        # ====================================================
+
+        st.subheader(
+            "📊 Career Match Comparison"
+        )
+
+        chart_data = top5.set_index(
+            "Job Role"
+        )["Match %"]
+
+        st.bar_chart(chart_data)
+
+        # ====================================================
+        # TARGET ROLE ANALYSIS
+        # ====================================================
+
+        st.header(
+            "🔍 Detailed Skill Gap Analysis"
+        )
+
+        selected_role = st.selectbox(
+            "Choose a job role",
+            jobs["job_role"].tolist()
+        )
+
+        selected_job = jobs[
+            jobs["job_role"] == selected_role
+        ].iloc[0]
+
+        required_skills = [
+            skill.strip()
+            for skill in str(
+                selected_job["required_skills"]
+            ).split(",")
+        ]
+
+        matched, missing, percentage = (
+            calculate_job_match(
+                student_skills,
+                required_skills
             )
         )
 
-    else:
-
-        st.warning(
-            "No known technical skills detected."
+        st.subheader(
+            f"🎯 {selected_role}"
         )
-
-
-    # --------------------------------------
-    # JOB RECOMMENDATIONS
-    # --------------------------------------
-
-    st.header(
-        "💼 Recommended Job Roles"
-    )
-
-
-    recommendations = []
-
-
-    for _, job in jobs.iterrows():
-
-        job_skills = set(
-            normalize_skill(skill)
-            for skill in
-            job["required_skills"].split(",")
-        )
-
-        matched = (
-            student_skills
-            .intersection(job_skills)
-        )
-
-        percentage = (
-            len(matched)
-            / len(job_skills)
-        ) * 100
-
-        recommendations.append({
-
-            "Job Role": job["job_role"],
-
-            "Match Percentage": percentage,
-
-            "Matched": len(matched),
-
-            "Total": len(job_skills)
-
-        })
-
-
-    recommendations_df = pd.DataFrame(
-        recommendations
-    )
-
-
-    recommendations_df = (
-        recommendations_df
-        .sort_values(
-            "Match Percentage",
-            ascending=False
-        )
-        .reset_index(drop=True)
-    )
-
-
-    # --------------------------------------
-    # BEST ROLE
-    # --------------------------------------
-
-    best_role = recommendations_df.iloc[0]
-
-
-    st.success(
-        f"🏆 Best Match: "
-        f"{best_role['Job Role']} — "
-        f"{best_role['Match Percentage']:.1f}%"
-    )
-
-
-    # --------------------------------------
-    # TOP 5
-    # --------------------------------------
-
-    top5 = recommendations_df.head(5)
-
-
-    st.dataframe(
-        top5[
-            [
-                "Job Role",
-                "Match Percentage",
-                "Matched",
-                "Total"
-            ]
-        ],
-        use_container_width=True,
-        hide_index=True
-    )
-
-
-    # --------------------------------------
-    # CHART
-    # --------------------------------------
-
-    chart_data = top5[
-        [
-            "Job Role",
-            "Match Percentage"
-        ]
-    ].set_index(
-        "Job Role"
-    )
-
-
-    st.bar_chart(chart_data)
-
-
-    # --------------------------------------
-    # SKILL GAP
-    # --------------------------------------
-
-    st.header(
-        "🎯 Skill Gap Analysis"
-    )
-
-
-    selected_role = st.selectbox(
-        "Select a target job role",
-        jobs["job_role"].tolist()
-    )
-
-
-    selected_job = jobs[
-        jobs["job_role"]
-        == selected_role
-    ].iloc[0]
-
-
-    required_skills = set(
-        normalize_skill(skill)
-        for skill in
-        selected_job[
-            "required_skills"
-        ].split(",")
-    )
-
-
-    matched_skills = (
-        student_skills
-        .intersection(required_skills)
-    )
-
-
-    missing_skills = (
-        required_skills
-        - student_skills
-    )
-
-
-    match_percentage = (
-        len(matched_skills)
-        / len(required_skills)
-    ) * 100
-
-
-    # --------------------------------------
-    # METRICS
-    # --------------------------------------
-
-    col1, col2, col3 = st.columns(3)
-
-
-    with col1:
 
         st.metric(
             "Skill Match",
-            f"{match_percentage:.1f}%"
+            f"{percentage:.2f}%"
         )
 
+        # ====================================================
+        # MATCHED SKILLS
+        # ====================================================
 
-    with col2:
+        col1, col2 = st.columns(2)
 
-        st.metric(
-            "Matched Skills",
-            len(matched_skills)
-        )
+        with col1:
 
-
-    with col3:
-
-        st.metric(
-            "Skills to Learn",
-            len(missing_skills)
-        )
-
-
-    # --------------------------------------
-    # MATCHED
-    # --------------------------------------
-
-    st.subheader(
-        "✅ Skills You Have"
-    )
-
-
-    if matched_skills:
-
-        st.write(
-            " • ".join(
-                sorted(matched_skills)
-            )
-        )
-
-    else:
-
-        st.write("None")
-
-
-    # --------------------------------------
-    # MISSING
-    # --------------------------------------
-
-    st.subheader(
-        "📚 Skills to Learn"
-    )
-
-
-    if missing_skills:
-
-        for skill in sorted(
-            missing_skills
-        ):
-
-            st.write(
-                f"📌 {skill.title()}"
+            st.subheader(
+                "✅ Matched Skills"
             )
 
-    else:
+            if matched:
 
-        st.success(
-            "🎉 You already have all "
-            "required skills!"
+                st.write(
+                    ", ".join(
+                        sorted(matched)
+                    )
+                )
+
+            else:
+
+                st.write(
+                    "No matching skills"
+                )
+
+        # ====================================================
+        # MISSING SKILLS
+        # ====================================================
+
+        with col2:
+
+            st.subheader(
+                "❌ Missing Skills"
+            )
+
+            if missing:
+
+                st.write(
+                    ", ".join(
+                        sorted(missing)
+                    )
+                )
+
+            else:
+
+                st.write(
+                    "🎉 No missing skills!"
+                )
+
+        # ====================================================
+        # SKILLS TO LEARN
+        # ====================================================
+
+        st.header(
+            "📚 Recommended Skills to Learn"
         )
 
+        if missing:
 
-    # --------------------------------------
-    # FINAL MESSAGE
-    # --------------------------------------
+            for skill in sorted(missing):
 
-    if match_percentage >= 80:
+                st.write(
+                    f"➡️ **{skill.title()}**"
+                )
 
-        st.success(
-            f"You are highly prepared for "
-            f"{selected_role}."
+        else:
+
+            st.success(
+                "🎉 You already have all the required skills for this role!"
+            )
+
+        # ====================================================
+        # FINAL RECOMMENDATION
+        # ====================================================
+
+        st.header(
+            "🚀 Career Development Suggestion"
         )
 
-    elif match_percentage >= 50:
+        if missing:
 
-        st.warning(
-            f"You have a good foundation for "
-            f"{selected_role}. "
-            f"Learn the missing skills."
-        )
+            st.info(
+                f"""
+                To become more suitable for the **{selected_role}**
+                role, focus on learning:
 
-    else:
+                **{", ".join(sorted(missing))}**
 
-        st.info(
-            f"You need more preparation for "
-            f"{selected_role}. "
-            f"Focus on the recommended skills."
-        )
+                After learning these skills, build projects and
+                add them to your resume to improve your job
+                readiness.
+                """
+            )
+
+        else:
+
+            st.success(
+                f"""
+                Your current skills match all the listed
+                requirements for **{selected_role}**.
+
+                Focus on projects, internships, interview
+                preparation and practical experience.
+                """
+            )
 
 
-    st.success(
-        "✅ Analysis completed successfully!"
-    )
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.markdown("---")
+
+st.caption(
+    "AI-Powered Skill Gap Analyzer | "
+    "Python • NLP • Machine Learning • Streamlit"
+)
