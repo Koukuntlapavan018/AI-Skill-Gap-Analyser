@@ -89,7 +89,7 @@ This project solves this problem by automatically analyzing a student's resume a
    Skills To Learn
           │
           ▼
-   Career Recommendations
+   Career Recommendation
           │
           ▼
       Streamlit Dashboard
