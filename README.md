@@ -8,7 +8,7 @@ The application is built using Python and Streamlit and can be accessed through 
 
 ## 🎯 Project Overview
 
-Many students are unsure whether their current technical skills match the requirements of industry job roles,
+Many students are unsure whether their current technical skills match the requirements of industry job roles.
 
 This project solves this problem by automatically analyzing a student's resume and providing:
 
