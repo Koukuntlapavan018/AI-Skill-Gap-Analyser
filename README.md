@@ -1,95 +1,102 @@
-# 🤖 AI-Powered Skill Gap Analyzer & Intelligent Career Recommendation System
+# 🎯 AI-Powered Skill Gap Analyzer & Intelligent Career Recommendation System
 
-An AI-powered career guidance application that analyzes a student's resume, identifies their technical skills, compares them with industry job requirements, calculates skill gaps, and recommends suitable career roles and skills to learn.
-
-The application is built using Python and Streamlit and can be accessed through a web browser without installing Python or any additional software.
+An AI-powered resume analysis and career recommendation system that analyzes a student's resume, detects technical skills, compares them with job requirements, identifies skill gaps, recommends suitable career roles, and generates a personalized learning roadmap.
 
 ---
 
-## 🎯 Project Overview
+## 📌 Project Overview
 
-Many students are unsure whether their current technical skills match the requirements of industry job roles.
+Students often find it difficult to understand:
 
-This project solves this problem by automatically analyzing a student's resume and providing:
+- Which technical skills they currently have
+- Which skills are required for a particular career
+- Which skills they are missing
+- Which career roles match their current profile
+- What they should learn next
 
-- Resume-based skill extraction
-- Job-role skill comparison
-- Skill match percentage
-- Missing skill identification
-- Career recommendations
-- Skills-to-learn recommendations
-- Interactive visual results
+This project provides an intelligent solution by analyzing a resume and comparing the extracted skills with predefined job-role requirements.
 
----
-
-## ✨ Features
-
-### 📄 Resume Analysis
-- Upload a resume in PDF format
-- Extract text from digital PDFs
-- Perform OCR on scanned/image-based resumes
-- Automatically identify technical skills
-
-### 🎯 Skill Gap Analysis
-- Compare student skills with job requirements
-- Calculate skill match percentage
-- Identify matched skills
-- Identify missing skills
-
-### 💼 Career Recommendation
-- Analyze available job roles
-- Calculate compatibility for each role
-- Display Top 5 suitable career roles
-
-### 📚 Skills to Learn
-- Shows missing skills for the selected job role
-- Helps students understand what they should learn next
-
-### 📊 Interactive Dashboard
-- Streamlit-based web interface
-- Skill match visualization
-- Career recommendation chart
-- Student profile information
-- Job-role analysis
+The system also generates a **Personalized Learning Roadmap** based on the selected career role and missing skills.
 
 ---
 
-## 🧠 System Workflow
+## 🚀 Key Features
+
+### 📄 1. Resume Upload
+
+Users can upload their resume in PDF format.
+
+The system supports:
+
+- Text-based PDF resumes
+- Scanned/image-based PDF resumes
+- OCR-based text extraction
+
+---
+
+### 🔍 2. Resume Text Extraction
+
+The application extracts text from uploaded resumes using:
+
+- PyMuPDF
+- RapidOCR
+
+If normal PDF text extraction fails, the system automatically uses OCR for scanned pages.
+
+---
+
+### 👨‍🎓 3. Student Profile Extraction
+
+The system attempts to identify:
+
+- Student Name
+- Education
+- Graduation Year
+- Technical Skills
+
+---
+
+### 🧠 4. Automatic Skill Detection
+
+The system detects technical skills from the resume.
+
+Examples include:
+
+- Python
+- SQL
+- Excel
+- Power BI
+- Machine Learning
+- Deep Learning
+- Pandas
+- NumPy
+- Java
+- DSA
+- Git
+- GitHub
+- HTML
+- CSS
+- JavaScript
+- React
+- Django
+- Flask
+- AWS
+- Docker
+- Linux
+- NLP
+- PyTorch
+- TensorFlow
+- Selenium
+- Software Testing
+
+---
+
+### 💼 5. Career Recommendation
+
+The system compares the student's detected skills with job-role requirements.
+
+It calculates:
 
 ```text
-                Resume PDF
-                    │
-                    ▼
-            Resume Text Extraction
-                    │
-          ┌─────────┴─────────┐
-          │                   │
-     Digital PDF         Scanned PDF
-          │                   │
-    PyMuPDF Extraction      RapidOCR
-          │                   │
-          └─────────┬─────────┘
-                    ▼
-              Skill Detection
-                    │
-                    ▼
-            Student Skill Profile
-                    │
-                    ▼
-          Compare With Job Skills
-                    │
-                    ▼
-             Skill Gap Analysis
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
-   Missing Skills       Match Percentage
-          │
-          ▼
-   Skills To Learn
-          │
-          ▼
-   Career Recommendation
-          │
-          ▼
-      Streamlit Dashboard
+Skill Match Percentage =
+(Matched Skills / Required Skills) × 100
