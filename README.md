@@ -99,4 +99,4 @@ It calculates:
 
 ```text
 Skill Match Percentage =
-(Matched Skills / Required Skills) × 100
+(Matched Skills / Required Skills) × 100.
