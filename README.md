@@ -1,6 +1,26 @@
 # 🎯 AI-Powered Skill Gap Analyzer & Intelligent Career Recommendation System
 
-An AI-powered resume analysis and career recommendation system that analyzes a student's resume, detects technical skills, compares them with job requirements, identifies skill gaps, recommends suitable career roles, and generates a personalized learning roadmap.
+An AI-powered web application that analyzes a student's resume, identifies their technical skills, compares them with job-role requirements, calculates skill gaps, recommends suitable career roles, and generates a personalized learning roadmap.
+
+The system uses **Python, NLP, OCR, Machine Learning concepts, Pandas, Streamlit and data-driven skill matching** to help students understand their career readiness.
+
+---
+
+## 🚀 Live Demo
+
+🌐 **Streamlit Application:**
+
+https://ai-skill-gap-analyser-j4tykkqfcwh58qvlmcou6.streamlit.app
+
+Users can upload their resume and receive:
+
+- 👤 Student profile extraction
+- 🧠 Automatic skill detection
+- 💼 Career recommendations
+- 📊 Skill-match percentage
+- ❌ Missing skill identification
+- 📚 Personalized learning roadmap
+- 🎯 Career development suggestions
 
 ---
 
@@ -8,95 +28,60 @@ An AI-powered resume analysis and career recommendation system that analyzes a s
 
 Students often find it difficult to understand:
 
-- Which technical skills they currently have
-- Which skills are required for a particular career
-- Which skills they are missing
+- Which skills they already have
+- Which skills are required for a particular job
+- What skills they are missing
 - Which career roles match their current profile
 - What they should learn next
 
-This project provides an intelligent solution by analyzing a resume and comparing the extracted skills with predefined job-role requirements.
+This project addresses these problems by automatically analyzing a student's resume and comparing the extracted skills with predefined job-role requirements.
 
-The system also generates a **Personalized Learning Roadmap** based on the selected career role and missing skills.
-
----
-
-## 🚀 Key Features
-
-### 📄 1. Resume Upload
-
-Users can upload their resume in PDF format.
-
-The system supports:
-
-- Text-based PDF resumes
-- Scanned/image-based PDF resumes
-- OCR-based text extraction
+The system converts resume information into a structured **student skill profile** and performs skill-gap analysis against multiple career roles.
 
 ---
 
-### 🔍 2. Resume Text Extraction
-
-The application extracts text from uploaded resumes using:
-
-- PyMuPDF
-- RapidOCR
-
-If normal PDF text extraction fails, the system automatically uses OCR for scanned pages.
-
----
-
-### 👨‍🎓 3. Student Profile Extraction
-
-The system attempts to identify:
-
-- Student Name
-- Education
-- Graduation Year
-- Technical Skills
-
----
-
-### 🧠 4. Automatic Skill Detection
-
-The system detects technical skills from the resume.
-
-Examples include:
-
-- Python
-- SQL
-- Excel
-- Power BI
-- Machine Learning
-- Deep Learning
-- Pandas
-- NumPy
-- Java
-- DSA
-- Git
-- GitHub
-- HTML
-- CSS
-- JavaScript
-- React
-- Django
-- Flask
-- AWS
-- Docker
-- Linux
-- NLP
-- PyTorch
-- TensorFlow
-- Selenium
-- Software Testing
-
----
-
-### 💼 5. Career Recommendation
-
-The system compares the student's detected skills with job-role requirements.
-
-It calculates:
+# 🧠 How the System Works
 
 ```text
-Skill Match Percentage =
-(Matched Skills / Required Skills) × 100.
+                    Resume PDF
+                        │
+                        ▼
+                Resume Processing
+                        │
+                        ▼
+                 Text Extraction
+                        │
+              ┌─────────┴─────────┐
+              │                   │
+        Digital Resume       Scanned Resume
+              │                   │
+          PyMuPDF               OCR
+              │              RapidOCR
+              └─────────┬─────────┘
+                        │
+                        ▼
+                 Skill Detection
+                        │
+                        ▼
+              Student Skill Profile
+                        │
+                        ▼
+              Job Requirement Data
+                        │
+                        ▼
+              Skill Matching Engine
+                        │
+              ┌─────────┴─────────┐
+              ▼                   ▼
+        Matched Skills       Missing Skills
+              │                   │
+              └─────────┬─────────┘
+                        ▼
+                Skill Gap Analysis
+                        │
+                        ▼
+              Career Recommendations
+                        │
+                        ▼
+           Personalized Learning Roadmap
+           
