@@ -2,7 +2,7 @@
 
 An AI-powered web application that analyzes a student's resume, identifies their technical skills, compares them with job-role requirements, calculates skill gaps, recommends suitable career roles, and generates a personalized learning roadmap.
 
-The system uses **Python, NLP, OCR, Machine Learning concepts, Pandas, Streamlit and data-driven skill matching** to help students understand their career readiness.
+The system uses **Python, NLP, OCR, Machine Learning concepts, Pandas, Streamlit and data-driven skill matching** to help students understand their career readiness
 
 ---
 
