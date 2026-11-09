@@ -80,7 +80,7 @@ The system converts resume information into a structured **student skill profile
                 Skill Gap Analysis
                         │
                         ▼
-              Career Recommendations
+              Career Recommendation
                         │
                         ▼
            Personalized Learning Roadmap
